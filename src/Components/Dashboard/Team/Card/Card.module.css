@@ -1,0 +1,19 @@
+.image {
+    border: 2px solid black;
+    width: 100px;
+}
+
+.sub {
+    color: gray;
+}
+
+.link {
+    color: #3E4042;
+    text-decoration: none;
+    transition: 0.3s;
+    opacity: 0.7;
+}
+
+.link:hover {
+    opacity: 1;
+}

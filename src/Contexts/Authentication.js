@@ -1,5 +1,4 @@
 import React, {useEffect, useState} from 'react';
-
 import { getAuth, onIdTokenChanged } from "firebase/auth";
 
 const user = React.createContext({

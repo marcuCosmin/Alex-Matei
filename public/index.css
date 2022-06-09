@@ -1,3 +1,24 @@
 body {
-    background-image: url("./images/background.jpg");
+    background: radial-gradient(transparent, #cecece);
+    background-repeat: no-repeat;
+}
+
+::placeholder {
+    color: rgb(117, 117, 117) !important;
+    opacity: 1 !important;
+}
+
+input {
+    outline: none !important;
+    padding: 0.5rem;
+}
+
+ul {
+    list-style: none !important;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
