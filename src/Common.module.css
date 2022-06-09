@@ -16,7 +16,6 @@ body, html {
 
 .modal {
     background: #24252660;
-    z-index: 9999;
 }
 
 .modal_form {
@@ -33,21 +32,38 @@ body, html {
 }
 
 .modal_header {
-    background: #3E4042;;
+    background: linear-gradient(black, rgb(220, 53, 69));
     font-size: 120%;
+}
+
+.inputs {
+    outline: none !important;
+    transition: 0.3s;
+    border: 0.5px solid;
+    position: relative;
+}
+
+.inputs_errors {
+    border-color: #a71d2b !important;
+}
+
+.inputs_errors:focus {
+    box-shadow: 0 0 0.5rem 0.20rem #a71d2b !important;
+}
+
+.inputs:focus,
+.btn:focus {
+    box-shadow: 0 0 0.5rem 0.20rem #00000090;
+    transform: translate(5px, -5px);
 }
 
 .text_btn {
     transition: 0.15s;
     font-weight: 400;
-    font-size: 105%;
+    font-size: 115%;
     outline: none !important;
     cursor: pointer;
     user-select: none !important;
-    background: transparent;
-    border: none;
-    padding: 0;
-    margin: 0;
 }
 
 .text_btn:hover {
@@ -68,6 +84,29 @@ body, html {
 
 .transition_15 {
     transition: 0.15s;
+}
+
+.loader {
+    display: flex;
+    justify-content: space-between;
+    min-width: 45px;
+}
+
+.loader div {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: white;
+    animation: loading 0.8s infinite;
+    opacity: 0.2;
+}
+
+.loader div:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loader div:nth-child(3) {
+    animation-delay: 0.4s;
 }
 
 @keyframes loading {
