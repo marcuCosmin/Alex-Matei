@@ -27,6 +27,8 @@ export default function Calendar() {
     }
   });
 
+  console.log(modal);
+
   function generateId() {
     const genratedId = Math.random() * 999999999999999999999;
     return requestIds.includes(genratedId) ? generateId() : genratedId;
@@ -40,9 +42,11 @@ export default function Calendar() {
   }, []);
 
   useEffect(function() {
+    if (modal.visible) {
     window.addEventListener('keyup', function(e) {
       if (e.key === 'Escape') {
-        setModal({...modal, visible: false});
+        console.log(modal);
+        setModal((modal) => ({...modal, visible: false}));
 
         if (modal.request.value !== 'Please select a request') {
           const generatedId = generateId();
@@ -54,6 +58,7 @@ export default function Calendar() {
         }
       }
     });
+    }
   }, [modal.visible]);
 
   function getWeeks(date) {

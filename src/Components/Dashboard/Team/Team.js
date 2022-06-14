@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, createElement} from 'react';
 import styles from './Team.module.css';
 import sstyles from '../../Sign/Sign.module.css';
 import { getFirestore, doc, updateDoc, arrayUnion, onSnapshot, collection, setDoc, query, where } from "firebase/firestore";
@@ -31,8 +31,10 @@ const createTeamInitial = {
     visible: false
   },
   addEmployee: {
+    employees: [],
     value: '',
-    visible: false
+    visible: false,
+    id: ''
   },
   addManager: {
     value: '',
@@ -79,40 +81,46 @@ const registerInitial = {
     error: false,
     visible: false
   },
+  type: {
+    value: 'Manager type',
+    error: false,
+    visible: false
+  },
   shift: true,
   loading: false
 };
 
+
 export default function Team() {
-
+  
   const years = [];
-
+  
   for (let i = new Date().getFullYear() - 18; i >= new Date().getFullYear() - 66; i--) {
     years.push(i);
   }
-
+  
   const [userIds, setUserIds] = useState([]);
-
+  
   function generateUid() {
     const genratedId = Math.random() * 999999999999999999999;
     return userIds.includes(genratedId) ? generateUid() : genratedId;
   }
-
+  
   const addManagerRef = useRef(null);
   const addMemberRef = useRef(null);
-
+  
   const [createTeam, setCreateTeam] = useState(createTeamInitial);
 
   const [employees, setEmployees] = useState({
-      humanresources: [],
-      projectmanagers: [],
+    humanresources: [],
+    projectmanagers: [],
       qualityassurance: [],
       scriptwriters: [],
       managers: [],
       teamleaders: []
-  });
-
-  const [teams, setTeams] = useState({
+    });
+    
+    const [teams, setTeams] = useState({
       loading: false,
       values: {
         humanresourcesteams: [],
@@ -121,17 +129,15 @@ export default function Team() {
         scriptwritersteams: []
       }
   });
-
-  console.log(teams.values.scriptwritersteams);
-
+  
   const [register, setRegister] = useState(registerInitial);
-
+  
   useEffect(function() {
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
+    
     let currentMonth = register.age.month;
     const days = [...getDays(register.age.year, months.findIndex(month => month === currentMonth) + 1)];
-
+    
     if (register.age.year === years[years.length - 1] || register.age.year === years[0]) {
       if (register.age.year === years[years.length - 1]) {
         months.splice(0, months.findIndex(month => month === new Date().toLocaleString('default', {month: 'long'})));
@@ -175,7 +181,7 @@ export default function Team() {
     for (const prop in shallowEmployees) {
       onSnapshot(query(collection(getFirestore(), prop)), function(querySnapshot) {
         querySnapshot.forEach(function(doc) {
-          if (!shallowEmployees[prop].includes(doc.data())) {
+          if (!shallowEmployees[prop].some(el => JSON.stringify(el) === JSON.stringify(doc.data()))) {
             shallowEmployees[prop].push(doc.data());
           }
         });
@@ -263,7 +269,7 @@ export default function Team() {
               <h4 className='text-center mb-3'>Create a team</h4>
 
               <div className='d-flex flex-column h-100'>
-                <input maxLength='15' className={`p-2 w-100 me-3 rounded ${sstyles.inputs} ${createTeam.name.error.visible && sstyles.inputs_errors}`} type='text' placeholder='Team name' value={createTeam.name.value} onChange={function(e) {setCreateTeam({...createTeam, name: {...createTeam.name, value: e.target.value}})}}/>
+                <input maxLength='15' className={`p-2 w-100 me-3 rounded ${sstyles.inputs} ${createTeam.name.error.visible && sstyles.inputs_errors}`} type='text' placeholder='Team name' value={createTeam.name.value} onChange={function(e) {/^[a-zA-Z]+$/.test(e.target.value) && setCreateTeam({...createTeam, name: {...createTeam.name, value: e.target.value}})}}/>
 
                 <Dropdown
                 error={createTeam.speciality.error}
@@ -271,15 +277,23 @@ export default function Team() {
                 setVisibility={function() {setCreateTeam({...createTeam, speciality: {...createTeam.speciality, visible: !createTeam.speciality.visible, error: false}})}}
                 items={['Scriptwriters', 'Project Managers', 'Quality Assurance', 'Human Resources']}
                 value={createTeam.speciality.value}
-                setValue={function(val) {setCreateTeam({...createTeam, speciality: {...createTeam.speciality, value: val, error: false}});}}/>
+                setValue={function(val) {setCreateTeam({...createTeam, addManager: {...createTeamInitial.addManager}, speciality: {...createTeam.speciality, value: val, error: false}});}}/>
 
                 <div className='position-relative'>
-                  <input onBlur={function(e) {if (!addManagerRef.current.contains(e.relatedTarget)) {setCreateTeam({...createTeam, addManager: {...createTeam.addManager, visible: false}})}}} onFocus={function() {setCreateTeam({...createTeam, addManager: {...createTeam.addManager, visible: true}})}} disabled={employees.teamleaders.length === 0} maxLength='15' className={`p-2 w-100 mt-3 me-3 rounded ${sstyles.inputs} ${employees.teamleaders.length === 0 && styles.disabled_input} ${createTeam.addManager.visible && styles.searchbox_active}`} type='text' placeholder={employees.teamleaders.length === 0 ? 'No managers available' : 'Add a manager to the team'} value={createTeam.addManager.value} onChange={function(e) {setCreateTeam({...createTeam, addManager: {...createTeam.addManager, value: e.target.value}})}}/>
+                  <input
+                  onBlur={function(e) {if (!addManagerRef.current.contains(e.relatedTarget)) {setCreateTeam({...createTeam, addManager: {...createTeam.addManager, visible: false}})}}}
+                  onFocus={function() {setCreateTeam({...createTeam, addManager: {...createTeam.addManager, visible: true}})}}
+                  disabled={employees.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).length === 0} maxLength='15'
+                  className={`p-2 w-100 mt-3 me-3 rounded ${sstyles.inputs} ${employees.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).length === 0 && styles.disabled_input} ${createTeam.addManager.visible && styles.searchbox_active}`}
+                  type='text'
+                  placeholder={employees.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).length === 0 ? 'No managers available' : 'Add a manager to the team'}
+                  value={createTeam.addManager.value}
+                  onChange={function(e) {setCreateTeam({...createTeam, addManager: {...createTeam.addManager, value: e.target.value}})}}/>
                   {(createTeam.addManager.visible && <ul ref={addManagerRef} className={`position-absolute bg-white shadow rounded-bottom p-2 m-0 ${styles.search_dropdown}`}>
 
-                  {employees.teamleaders.some(em => em.displayName.toLowerCase().includes(createTeam.addManager.value.toLowerCase())) ? (
+                  {employees.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).some(em => em.displayName.toLowerCase().includes(createTeam.addManager.value.toLowerCase())) ? (
                     
-                    employees.teamleaders.map(function(emp, index) {
+                    employees.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).map(function(emp, index) {
 
                       return emp.displayName.toLowerCase().includes(createTeam.addManager.value.toLowerCase()) && <li onBlur={function(e) {if (!addManagerRef.current.contains(e.relatedTarget)) {setCreateTeam({...createTeam, addManager: {...createTeam.addManager, visible: false, id: emp.id}})}}} tabIndex='0' onClick={function() {setCreateTeam({...createTeam, addManager: {...createTeam.addManager, value: emp.displayName}})}} key={index}>{emp.displayName}</li>
 
@@ -293,14 +307,38 @@ export default function Team() {
                 {createTeam.speciality.value !== 'Speciality' && 
 
                 <div className='position-relative'>
-                  <input onBlur={function(e) {if (!addMemberRef.current.contains(e.relatedTarget)) {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, visible: false}})}}} onFocus={function() {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, visible: true}})}} disabled={employees.teamleaders.length === 0} maxLength='15' className={`p-2 w-100 mt-3 me-3 rounded ${sstyles.inputs} ${employees.teamleaders.length === 0 && styles.disabled_input} ${createTeam.addEmployee.visible && styles.searchbox_active}`} type='text' placeholder={employees.teamleaders.length === 0 ? 'No employees available' : 'Add a member to the team'} value={createTeam.addEmployee.value} onChange={function(e) {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, value: e.target.value}})}}/>
+                  {createTeam.addEmployee.employees.length > 0 && (
+                    <ul className='p-0 mb-0 mt-3 d-flex'>
+                      {createTeam.addEmployee.employees.map((e, index) => <li><Card delete={function() {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, employees: [...createTeam.addEmployee.employees.filter(em => em.id !== e.id)]}})}} type={3} key={index} displayName={e.name}/></li>)}
+                    </ul>
+                  )}
+                  
+                  <input
+                  onBlur={function(e) {
+                    if (!addMemberRef.current.contains(e.relatedTarget)) {
+                      setCreateTeam({
+                        ...createTeam,
+                        addEmployee: {value: '', id: '',
+                          visible: false,
+                          employees: (createTeam.addEmployee.value.length && createTeam.addEmployee.id.length) ? [...createTeam.addEmployee.employees, {name: createTeam.addEmployee.value, id: createTeam.addEmployee.id}] : [...createTeam.addEmployee.employees]
+                        }
+                      });
+                    }}}
+                  onFocus={function() {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, visible: true}})}}
+                  disabled={employees[createTeam.speciality.value.toLowerCase().replace(' ', '')].filter(e => e.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && !createTeam.addEmployee.employees.some(employee => employee.id === e.id)).length === 0}
+                  maxLength='15'
+                  className={`p-2 w-100 mt-3 me-3 rounded ${sstyles.inputs} ${employees[createTeam.speciality.value.toLowerCase().replace(' ', '')].filter(e => e.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && !createTeam.addEmployee.employees.some(employee => employee.id === e.id)).length === 0 && styles.disabled_input} ${createTeam.addEmployee.visible && styles.searchbox_active}`} type='text'
+                  placeholder={employees[createTeam.speciality.value.toLowerCase().replace(' ', '')].filter(e => e.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && !createTeam.addEmployee.employees.some(employee => employee.id === e.id)).length === 0 ? 'No employees available' : 'Add a member to the team'}
+                  value={createTeam.addEmployee.value}
+                  onChange={function(e) {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, value: e.target.value}})}}/>
+                  
                   {(createTeam.addEmployee.visible && <ul ref={addMemberRef} className={`position-absolute bg-white shadow rounded-bottom p-2 m-0 ${styles.search_dropdown}`}>
 
-                  {employees[createTeam.speciality.value.toLowerCase().replace(' ', '')].some(em => em.displayName.toLowerCase().includes(createTeam.addEmployee.value.toLowerCase())) ? (
+                  {employees[createTeam.speciality.value.toLowerCase().replace(' ', '')].some(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && !createTeam.addEmployee.employees.some(employee => employee.id === em.id) && em.displayName.toLowerCase().includes(createTeam.addEmployee.value.toLowerCase())) ? (
                     
-                    employees[createTeam.speciality.value.toLowerCase().replace(' ', '')].map(function(emp, index) {
+                    employees[createTeam.speciality.value.toLowerCase().replace(' ', '')].filter(e => e.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift')).map(function(emp, index) {
 
-                      return emp.displayName.toLowerCase().includes(createTeam.addEmployee.value.toLowerCase()) && <li onBlur={function(e) {if (!addMemberRef.current.contains(e.relatedTarget)) {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, visible: false}})}}} tabIndex='0' onClick={function() {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, value: emp.displayName}})}} key={index}>{emp.displayName}</li>
+                      return emp.displayName.toLowerCase().includes(createTeam.addEmployee.value.toLowerCase()) && <li onBlur={function(e) {if (!addMemberRef.current.contains(e.relatedTarget)) {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, visible: false}})}}} tabIndex='0' onClick={function() {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, value: emp.displayName, id: emp.id}})}} key={index}>{emp.displayName}</li>
 
                     }) 
 
@@ -315,7 +353,7 @@ export default function Team() {
 
                   <div className='d-flex justify-content-between align-items-center mt-2 mb-3'>
                     <div className={`${styles.toggle_text} ${createTeam.shift && styles.toggle_active_text}`}>Morning</div>
-                    <div tabIndex='0' className={`mx-2 ${styles.toggle}`} onClick={function() {setCreateTeam({...createTeam, shift: !createTeam.shift})}}>
+                    <div tabIndex='0' className={`mx-2 ${styles.toggle}`} onClick={function() {setCreateTeam({...createTeam, addManager: {...createTeamInitial.addManager}, addEmployee: {...createTeamInitial.addEmployee}, shift: !createTeam.shift})}}>
                       <div className={`${styles.toggle_circle}`} style={{transform: `translateX(${createTeam.shift ? 0 : 100}%) scale(1.1)`}}/>
                     </div>
                     <div className={`${styles.toggle_text} ${!createTeam.shift && styles.toggle_active_text}`}>Night</div>
@@ -353,14 +391,19 @@ export default function Team() {
                 shallowRegister.title.error = true;
               }
 
+              if (register.title.value === 'Team Leader' && register.type.value === "Manager type") {
+                failed = true;
+                shallowRegister.type.error = true;
+              }
+
               setRegister(shallowRegister);
 
               if (!failed) {
                 const generatedId = generateUid();
 
-                setRegister({...register, loading: true});      
-
-                setDoc(doc(collection(getFirestore(), `${register.title.value.toLowerCase().replace(' ', '')}${register.title.value === 'Quality Assurance' ? '' : 's'}`), generatedId.toString()), {
+                setRegister({...register, loading: true});
+                
+                const dataToBePosted = {
                   displayName: `${register.name.first.value} ${register.name.last.value}`,
                   email: `${register.name.first.value}.${register.name.last.value}@yahoo.com`,
                   joined: `${new Date().toLocaleString('default', {month: 'long'})}/${new Date().getDate()}/${new Date().getFullYear()}`,
@@ -368,8 +411,14 @@ export default function Team() {
                   dateOfBirth: `${register.age.month}/${register.age.day}/${register.age.year}`,
                   requestsIDs: [],
                   id: generatedId.toString(),
-                  shift: `${register.shift ? 'Morning' : 'Night'} Shift` 
-                }).then(setDoc(doc(collection(getFirestore(), `ids`), generatedId.toString()), {value: generatedId.toString()})).then(function() {
+                  shift: `${register.shift ? 'Morning' : 'Night'} Shift`
+                }
+
+                if (register.title.value === 'Team Leader') {
+                  dataToBePosted.type = register.type.value;
+                }
+
+                setDoc(doc(collection(getFirestore(), `${register.title.value.toLowerCase().replace(' ', '')}${register.title.value === 'Quality Assurance' ? '' : 's'}`), generatedId.toString()), dataToBePosted).then(setDoc(doc(collection(getFirestore(), `ids`), generatedId.toString()), {value: generatedId.toString()})).then(function() {
                   setRegister(registerInitial);
                 });
               }
@@ -378,8 +427,8 @@ export default function Team() {
               <h4 className='text-center mb-3'>Register an employee</h4>
 
               <div className='d-flex'>
-                <input maxLength='15' className={`p-2 w-100 me-3 rounded ${sstyles.inputs} ${register.name.first.error.visible && sstyles.inputs_errors}`} type='text' placeholder='First name' value={register.name.first.value} onChange={function(e) {setRegister({...register, name: {...register.name, first: {value: e.target.value, error: {visible: false, value: ''}}}})}}/>
-                <input maxLength='15' className={`p-2 w-100 rounded ${sstyles.inputs} ${register.name.first.error.visible && sstyles.inputs_errors}`} type='text' placeholder='Last name' value={register.name.last.value} onChange={function(e) {setRegister({...register, name: {...register.name, last: {value: e.target.value, error: {visible: false, value: ''}}}})}}/>
+                <input maxLength='15' className={`p-2 w-100 me-3 rounded ${sstyles.inputs} ${register.name.first.error.visible && sstyles.inputs_errors}`} type='text' placeholder='First name' value={register.name.first.value} onChange={function(e) {/^[a-zA-Z]+$/.test(e.target.value) && setRegister({...register, name: {...register.name, first: {value: e.target.value, error: {visible: false, value: ''}}}})}}/>
+                <input maxLength='15' className={`p-2 w-100 rounded ${sstyles.inputs} ${register.name.first.error.visible && sstyles.inputs_errors}`} type='text' placeholder='Last name' value={register.name.last.value} onChange={function(e) {/^[a-zA-Z]+$/.test(e.target.value) && setRegister({...register, name: {...register.name, last: {value: e.target.value, error: {visible: false, value: ''}}}})}}/>
               </div>
 
               <div className={`p-2 rounded mt-3 ${[sstyles.inputs, styles.disabled_input].join(' ')}`}>
@@ -401,6 +450,8 @@ export default function Team() {
               </div>
 
               <Dropdown error={register.title.error} visible={register.title.visible} setVisibility={function() {setRegister({...register, title: {...register.title, visible: !register.title.visible, error: false}})}} items={['Scriptwriter', 'Quality Assurance', 'Project Manager', 'Team Leader', 'Manager', 'Human Resources']} value={register.title.value} setValue={function(val) {setRegister({...register, title: {...register.title, value: val, error: false}, });}}/>
+
+              {register.title.value === 'Team Leader' && <Dropdown error={register.type.error} visible={register.type.visible} setVisibility={function() {setRegister({...register, type: {...register.type, visible: !register.type.visible, error: false}})}} items={['Scriptwriter', 'Quality Assurance', 'Project Manager', 'Manager', 'Human Resources']} value={register.type.value} setValue={function(val) {setRegister({...register, type: {...register.type, value: val, error: false}, });}}/>}
 
               <div className='mt-3'>
                 <div className={`text-center ${styles.toggle_text}`}>Shift</div>

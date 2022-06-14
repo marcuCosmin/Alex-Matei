@@ -14,7 +14,7 @@ export default function Dropdown(props) {
 
         {props.visible && (
           <ul ref={dropdownListRef} className={`position-absolute bg-white shadow rounded-bottom p-2 w-100 ${styles.dropdown_list}`}>
-              {props.items && props.items.map((e, index) => <li onBlur={function(e) {!dropdownListRef.current.contains(e.relatedTarget) && props.setVisibility(false)}} key={index} tabIndex={props.visible ? '0' : '-1'} onClick={function() {props.setValue(e)}}>{e}</li>)}
+              {props.items && props.items.map((e, index) => <li onBlur={function(e) {!dropdownListRef.current.contains(e.relatedTarget) && props.setVisibility(false)}} key={index} tabIndex={props.visible ? '0' : '-1'} onClick={function() {props.setValue(e);}}>{e}</li>)}
           </ul>
         )}
     </div>

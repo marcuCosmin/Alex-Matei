@@ -46,7 +46,7 @@ export default function Header() {
         <nav className='d-flex w-100 justify-content-end align-items-end navbar py-2 pt-0 ps-2 pe-4' style={{minHeight: '75px'}}>
             <div>
 
-                <Dropdown titleStyle={{border: 'none', background: 'white'}} style={{width: '200px', marginRight: '2rem'}} items={['Scriptwriter', 'Quality Assurance', 'Project Manager', 'Team Leader', 'Manager', 'Vice President', 'Human Resources']} visible={navDropIsVisible} setValue={navDrop.update} setVisibility={function() {setNavDropIsVisisible(!navDropIsVisible)}} value={navDrop.value} />
+                <Dropdown titleStyle={{border: 'none', background: 'white'}} style={{width: '200px', marginRight: '2rem'}} items={['Scriptwriter', 'Quality Assurance', 'Project Manager', 'Team Leader', 'Manager', 'Human Resources']} visible={navDropIsVisible} setValue={navDrop.update} setVisibility={function() {setNavDropIsVisisible(!navDropIsVisible)}} value={navDrop.value} />
             </div>
             <div>  
                 <div className={`position-relative ${styles.dropdown}`}>

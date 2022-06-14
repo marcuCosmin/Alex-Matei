@@ -1,6 +1,5 @@
 .image {
     border: 2px solid black;
-    width: 100px;
 }
 
 .sub {
@@ -16,4 +15,14 @@
 
 .link:hover {
     opacity: 1;
+}
+
+.svgs {
+    transition: 0.3s;
+    cursor: pointer;
+    font-size: 150%;
+}
+
+.svgs:hover {
+    opacity: 0.5;
 }
