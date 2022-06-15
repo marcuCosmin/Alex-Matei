@@ -26,16 +26,17 @@ function Authentication({children}) {
     useEffect(function() {
         
         onIdTokenChanged(getAuth(), function (user) {
+
             if (user) {
             
                 setUserProps({
 
                     isSignedIn: true,
-                    displayName: user.displayName,
+                    displayName: 'Alexandru Matei',
                     emailVerified: user.emailVerified,
                     uid: user.uid,
                     photoURL: user.photoURL,        
-                    completed: user.displayName ? true : false,
+                    completed: user.uid ? true : false,
                 });
 
             } else {

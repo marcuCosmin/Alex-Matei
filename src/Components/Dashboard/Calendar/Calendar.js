@@ -5,6 +5,7 @@ import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import Dropdown from '../../Dropdown/Dropdown';
 import {user} from '../../../Contexts/Authentication';
 import { getFirestore, doc, updateDoc, arrayUnion, onSnapshot, collection, setDoc, query, where } from "firebase/firestore";
+import {getAuth, updateProfile} from 'firebase/auth';
 
 export default function Calendar() {
 
@@ -146,7 +147,6 @@ export default function Calendar() {
         </tbody>
 
         <tfoot>
-
         </tfoot>
       </table>
 

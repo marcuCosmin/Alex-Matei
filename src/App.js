@@ -15,6 +15,7 @@ import Team from './Components/Dashboard/Team/Team';
 import Work from './Components/Dashboard/Work/Work';
 import Requests from './Components/Dashboard/Requests/Requests';
 import Loader from './Components/Loader/Loader';
+import { getAuth } from 'firebase/auth';
 
 initializeApp({
   apiKey: "AIzaSyDQE01TMc74eoeHEmQjglYVN137SEXaqV4",
@@ -22,13 +23,15 @@ initializeApp({
   projectId: "alexandru-matei",
   storageBucket: "alexandru-matei.appspot.com",
   messagingSenderId: "884673360520",
-  appId: "1:884673360520:web:f27a157cb6412fb64b653d" 
+  appId: "1:884673360520:web:f27a157cb6412fb64b653d"
 });
 
 function App() {
 
   const dw = useContext(deviceWidth);
   const u = useContext(user);
+
+  console.log(u.isSignedIn, u.completed);
 
   return (
       <>
