@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef, useContext} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import styles from './Sign.module.css';
 import cloneDeep from 'lodash.clonedeep';
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
@@ -7,8 +7,6 @@ import { faEye, faEyeSlash, faArrowLeft } from '@fortawesome/free-solid-svg-icon
 import cstyles from '../../Common.module.css';
 import Checkbox from '../Checkbox/Checkbox';
 import Logo from '../Logo/Logo';
-import {user} from '../../Contexts/Authentication';
-import Loader from '../Loader/Loader';
 
 
 export default function Sign() {
@@ -34,8 +32,6 @@ export default function Sign() {
         loading: false,
         remember: false
     };
-
-    const u = useContext(user);
 
     const [form, setForm] = useState(formInitial);
 

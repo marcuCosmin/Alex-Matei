@@ -18,8 +18,8 @@ export default function Dashboard() {
       <div>
         <Logo className='m-3' isLink={true}/>
         <ul className={`p-0 m-0 text-white rounded ${styles.dashboard_list}`}>
-          <li className={`d-flex align-items-center ${useLocation().pathname.includes('team') && styles.dashboard_current}`}>
-            <Link className='p-3 w-100' exact='true' to='/team'><FontAwesomeIcon className='me-2' icon={faUsers}/> Teams</Link>
+          <li className={`d-flex align-items-center ${useLocation().pathname.includes('team') && styles.dashboard_current} ${['Human Resources', 'CEO', 'Manager'].includes(title.value) ? 'd-block' : 'd-none'}`}>
+            <Link className='p-3 w-100' exact='true' to='/team'><FontAwesomeIcon className='me-2' icon={faUsers}/> Teams / Employees</Link>
           </li>
           <li className={`d-flex align-items-center ${useLocation().pathname.includes('calendar') && styles.dashboard_current}`}>
             <Link className='p-3 w-100' exact='true' to='/calendar'><FontAwesomeIcon className='me-2' icon={faCalendarAlt}/> Calendar</Link>

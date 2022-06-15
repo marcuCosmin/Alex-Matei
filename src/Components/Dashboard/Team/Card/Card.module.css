@@ -26,3 +26,7 @@
 .svgs:hover {
     opacity: 0.5;
 }
+
+.team_logo {
+    font-size: 50px;
+}
