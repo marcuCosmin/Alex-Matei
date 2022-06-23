@@ -1,34 +1,53 @@
-import React, {useContext} from 'react';
+import React, {useState, useContext, useEffect} from 'react';
+
 import styles from './Dashboard.module.css';
+
 import Logo from '../Logo/Logo';
-import { useLocation } from 'react-router-dom';
+
+import { faBriefcase, faCalendarAlt, faReceipt, faUsers, faSortDown } from '@fortawesome/free-solid-svg-icons';
+
+import DashboardLink from './DashboardLink/DashboardLink';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBriefcase, faCalendarAlt, faReceipt, faUsers } from '@fortawesome/free-solid-svg-icons';
-import { Link } from 'react-router-dom';
-import { userTiitle } from '../../Contexts/Ttile';
-import {user} from '../../Contexts/Authentication';
+
+import { user } from '../../Contexts/Authentication';
+import { getFirestore, onSnapshot, collection, query } from "firebase/firestore";
+
+// import { additional } from '../../Contexts/Additional';
 
 export default function Dashboard() {
 
-  const title = useContext(userTiitle);
+  const [requests, setRequests] = useState(false);
+
   const u = useContext(user);
+
+  const [a, setA] = useState({});
+
+  useEffect(function() {
+    onSnapshot(query(collection(getFirestore(), 'users')), function(querySnapshot) {
+      querySnapshot.forEach(function(doc) {
+          if (doc._key.path.segments[doc._key.path.segments.length - 1] === u.uid) {
+              setA(doc.data());
+          }
+      });
+    });
+  }, []);
+
 
   return (
     <div className={`position-fixed h-100 ${styles.dashboard}`}>
       <div>
-        <Logo className='m-3' isLink={true}/>
+        <Logo className='m-3' isLink={false}/>
         <ul className={`p-0 m-0 text-white rounded ${styles.dashboard_list}`}>
-          <li className={`d-flex align-items-center ${useLocation().pathname.includes('team') && styles.dashboard_current} ${['Human Resources', 'CEO', 'Manager'].includes(title.value) ? 'd-block' : 'd-none'}`}>
-            <Link className='p-3 w-100' exact='true' to='/team'><FontAwesomeIcon className='me-2' icon={faUsers}/> Teams / Employees</Link>
-          </li>
-          <li className={`d-flex align-items-center ${useLocation().pathname.includes('calendar') && styles.dashboard_current}`}>
-            <Link className='p-3 w-100' exact='true' to='/calendar'><FontAwesomeIcon className='me-2' icon={faCalendarAlt}/> Calendar</Link>
-          </li>
-          <li className={`d-flex align-items-center ${useLocation().pathname.includes('requests') && styles.dashboard_current}`}>
-            <Link className='p-3 w-100' exact='true' to='/requests'><FontAwesomeIcon className='me-2' icon={faReceipt}/> Requests</Link>
-          </li>
-          <li className={`d-flex align-items-center ${useLocation().pathname.includes('work') && styles.dashboard_current} ${title.value === 'Human Resources' ? 'd-block' : 'd-none'}`}>
-            <Link className='p-3 w-100' to={`/work`}><FontAwesomeIcon className='me-2' icon={faBriefcase}/> Work</Link>
+          <DashboardLink location="/teams" visible={a.jobTitle === 'Team Leader' || a.jobTitle === 'CEO'} title="Teams / Employees" icon={faUsers}/>
+          <DashboardLink location="/" visible={true} title="Calendar" icon={faCalendarAlt}/>
+          <DashboardLink location="/work" visible={a.jobTitle === 'Human Resources' || a.jobTitle === 'CEO'} title="Work" icon={faBriefcase}/>
+          <li className={`p-3 position-relative`}>
+            <span className={`${styles.requests_title} ${requests && styles.requests_title_active}`} onClick={function(){setRequests(!requests)}}><FontAwesomeIcon className='me-2' icon={faReceipt}/>Requests <FontAwesomeIcon icon={faSortDown}/></span>
+            {requests && <ul className={`shadow border rounded position-absolute ${styles.requests_list}`}>
+              <li><a href='https://firebasestorage.googleapis.com/v0/b/alexandru-matei.appspot.com/o/Salary%20Flyer.xlsx?alt=media&token=54a7f363-6a84-4873-95d4-8be2806b1ac9' download={true}>Salary Flyer</a></li>
+              <li><a href='https://firebasestorage.googleapis.com/v0/b/alexandru-matei.appspot.com/o/Dummy.xlsx?alt=media&token=30d18aa8-da8b-4a4f-bb4c-e13899c7f7c6' download={true}>Dummy Request</a></li>
+            </ul>
+            }
           </li>
         </ul>
       </div>

@@ -1,8 +1,3 @@
-body, html {
-    width: 100%;
-    height: 100%;
-}
-
 .absolute_center {
     position: absolute;
     top: 50%;
@@ -70,13 +65,8 @@ body, html {
     transition: 0.15s;
 }
 
-@keyframes loading {
-    0% {opacity: 1; transform: scale(1.8)};
-    100% {opacity: 0.2; transform: scale(1)};
-}
-
-.list {
-    list-style: none;
-    margin-bottom: 0;
-    padding: 0.5rem;
+.disabled_input {
+    color: rgb(117, 117, 117);
+    cursor: not-allowed;
+    background: #F2F2F2 !important;
 }

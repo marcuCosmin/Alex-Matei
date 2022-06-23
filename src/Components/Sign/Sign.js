@@ -37,6 +37,8 @@ export default function Sign() {
 
     const initialFocus = useRef(null);
 
+    console.log(form);
+
     useEffect(function() {
         if (document.cookie.includes('email=')) {
     
@@ -106,7 +108,7 @@ export default function Sign() {
                     }
                 }
     
-                if (shallowForm.password.error.value) {
+                if (shallowForm.password.error.visible) {
     
                     shallowForm.password.error.value = `The password must contain at least${!password.digits.valid ? ' 2 different digits,' : ''}${!password.symbols.valid ? ' 2 different symbols,' : ''}${!password.lowLetters.valid ? ' 2 different lowercased letters,' : ''}${!password.upLetters.valid ? ' 2 different uppercased letters,' : ''}`;
     

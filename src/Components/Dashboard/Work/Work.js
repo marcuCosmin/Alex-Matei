@@ -7,6 +7,8 @@ export default function Work() {
 
   const [requests, setRequests] = useState({loading: false, values: []});
 
+  console.log(requests);
+
   useEffect(function() {
     onSnapshot(query(collection(getFirestore(), 'requests')), function(querySnapshot) {
       const users = []
@@ -18,9 +20,9 @@ export default function Work() {
   }, []);
 
   return (
-    <div className='d-flex justify-content-end me-2'>
+    <div className='d-flex justify-content-center me-2'>
       <ul>
-        {requests.values.map(function(req,index) {if (!req.hasOwnProperty('value')) {return <RequestCard title={req.title} key={index} requester={req.requester} date={req.date}/>}})}
+        {requests.values.map(function(req,index) {if (!req.hasOwnProperty('value')) {return <RequestCard title={req.title} key={index} requester={req.requester} date={req.date} hours={req.hours}/>}})}
       </ul>
     </div>
   )

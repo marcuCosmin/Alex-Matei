@@ -8,7 +8,9 @@ const user = React.createContext({
     emailVerified: false,
     uid: '',
     photoURL: null,
-    completed: false
+    completed: false,
+    joined: '',
+    email: ''
 });
 
 function Authentication({children}) {
@@ -21,6 +23,8 @@ function Authentication({children}) {
         uid: '',
         photoURL: null,
         completed: false,
+        joined: '',
+        email: ''
     });
 
     useEffect(function() {
@@ -32,11 +36,13 @@ function Authentication({children}) {
                 setUserProps({
 
                     isSignedIn: true,
-                    displayName: 'Alexandru Matei',
+                    displayName: user.displayName,
                     emailVerified: user.emailVerified,
                     uid: user.uid,
                     photoURL: user.photoURL,        
                     completed: user.uid ? true : false,
+                    joined: user.metadata.creationTime,
+                    email: user.email
                 });
 
             } else {
@@ -49,6 +55,8 @@ function Authentication({children}) {
                     uid: '',
                     photoURL: null,
                     completed: true,
+                    joined: '',
+                    email: ''
                 });
             }
         });

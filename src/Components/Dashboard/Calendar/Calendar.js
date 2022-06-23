@@ -5,7 +5,8 @@ import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import Dropdown from '../../Dropdown/Dropdown';
 import {user} from '../../../Contexts/Authentication';
 import { getFirestore, doc, updateDoc, arrayUnion, onSnapshot, collection, setDoc, query, where } from "firebase/firestore";
-import {getAuth, updateProfile} from 'firebase/auth';
+import sstyles from '../../Sign/Sign.module.css';
+import cloneDeep from 'lodash.clonedeep';
 
 export default function Calendar() {
 
@@ -17,7 +18,7 @@ export default function Calendar() {
 
   const u = useContext(user);
 
-  const [requestIds, setRequestsIds] = useState([]);
+  const [currentDay, setCurrentDay] = useState();
 
   const [modal, setModal] = useState({
     visible: false,
@@ -25,33 +26,35 @@ export default function Calendar() {
       visible: false,
       error: false,
       value: 'Please select a request'
-    }
+    },
+    hours: 1
   });
 
-  console.log(modal);
-
-  function generateId() {
-    const genratedId = Math.random() * 999999999999999999999;
-    return requestIds.includes(genratedId) ? generateId() : genratedId;
-  }
+  const [requests, setRequests] = useState([]);
 
   useEffect(function() {
     
-    onSnapshot(doc(getFirestore(), 'requests', 'ids'), function(doc) {
-        setRequestsIds([doc.data().values]);
-  });
+    onSnapshot(query(collection(getFirestore(), 'requests')), function(querySnapshot) {
+      const shallowRequests = cloneDeep(requests);
+      querySnapshot.forEach(function(doc) {
+        if (doc.data()) {
+          if (doc.data().requesterId === u.uid) {
+            shallowRequests.push(doc.data())
+          }
+        }
+      });
+      setRequests(shallowRequests);
+    });
   }, []);
 
   useEffect(function() {
     if (modal.visible) {
     window.addEventListener('keyup', function(e) {
       if (e.key === 'Escape') {
-        console.log(modal);
         setModal((modal) => ({...modal, visible: false}));
 
         if (modal.request.value !== 'Please select a request') {
-          const generatedId = generateId();
-          setDoc(doc(collection(getFirestore(), 'requests'), generatedId.toString()), {
+          setDoc(doc(collection(getFirestore(), 'requests'), u.uid), {
             title: modal.request.value,
             requester: u.displayName,
             date: `${new Date().toLocaleString('default', {month: 'long'})}/${new Date().getDate()}/${new Date().getFullYear()}` 
@@ -102,11 +105,15 @@ export default function Calendar() {
               <div className={`pe-3 pt-2 ms-auto ${styles.modal_close}`} onClick={function() {
                 setModal({...modal, visible: false}); 
                 if (modal.request.value !== 'Please select a request') {
-                  const generatedId = generateId();
-                  setDoc(doc(collection(getFirestore(), 'requests'), generatedId.toString()), {
+                  setDoc(doc(collection(getFirestore(), 'requests'), (Math.random() * 999999999999999999999).toString()), {
                     title: modal.request.value,
                     requester: u.displayName,
-                    date: `${new Date().toLocaleString('default', {month: 'long'})}/${new Date().getDate()}/${new Date().getFullYear()}` 
+                    date: `${new Date().toLocaleString('default', {month: 'long'})}/${new Date().getDate()}/${new Date().getFullYear()}`,
+                    day: currentDay,
+                    hours: modal.hours,
+                    requesterId: u.uid,
+                    status: false,
+                    reason: ''
                   });
                 }}}
               ><FontAwesomeIcon icon={faTimes}></FontAwesomeIcon></div>
@@ -117,7 +124,7 @@ export default function Calendar() {
               <Dropdown visible={modal.request.visible} setValue={function(val) {
                 setModal({...modal, request: {...modal.request, value: val, error: false}, });
               }} error={modal.request.error} setVisibility={function() {setModal({...modal, request: {...modal.request, visible: !modal.request.visible}})}} items={['Work from home', 'Day off', 'Overtime', 'Medical leave']} value={modal.request.value}/>
-
+              <input type='number' placeholder='Number of hours' className={`text-center p-2 rounded mt-4 ${sstyles.inputs}`} value={modal.hours} onChange={function(e) {setModal({...modal, hours: e.target.value > 8 ? 8 : e.target.value < 1 ? 1 : e.target.value })}}/>
             </form>
 
 
@@ -143,7 +150,24 @@ export default function Calendar() {
         </thead>
 
         <tbody className={`${styles.calendar_body}`}>
-          {date.weeks.map((element, index) => <tr key={index}>{element.map((e, i) => <td tabIndex={e !== '' ? '0' : '-1'} onClick={function() {e !== '' && setModal({...modal, visible: true, title: `${e + (e === 1 ? 'st' : e === 2 ? 'nd' : e === 3 ? 'rd' : 'th')}`})}} className={[e === '' ? styles.disabled_td : null, e === new Date().getDate() ? styles.calendar_current_day : null].join(' ')} key={element.findIndex(x => x === e) + i.toString()}>{e}</td>)}</tr>)}
+          {date.weeks.map((element, index) => 
+          <tr key={index}>{element.map((e, i) => 
+            <td tabIndex={e !== '' ? '0' : '-1'} onClick={function() {if (e !== '') {
+              setModal({...modal, visible: true, title: `${e + (e === 1 ? 'st' : e === 2 ? 'nd' : e === 3 ? 'rd' : 'th')}`});
+              setCurrentDay(e);
+            }
+            }} className={[e === '' ? styles.disabled_td : null, e === new Date().getDate() ? styles.calendar_current_day : null].join(' ')} key={element.findIndex(x => x === e) + i.toString()}>
+              <div>
+                {(requests.find(el => el.day === e) !== undefined) && 
+                <>
+                  <div className='text-center'>{requests.find(el => el.day === e).title}</div>
+                  <div className='text-center'>{requests.find(el => el.day === e).hours.toString() + ' hours'}</div>
+                </>
+                }
+              </div>
+              {e}
+            </td>)}
+          </tr>)}
         </tbody>
 
         <tfoot>

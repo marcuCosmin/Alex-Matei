@@ -1,11 +1,14 @@
-import React, {useState, useEffect, useRef, createElement} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import styles from './Team.module.css';
 import sstyles from '../../Sign/Sign.module.css';
-import { getFirestore, doc, updateDoc, arrayUnion, onSnapshot, collection, setDoc, query, where, deleteDoc } from "firebase/firestore";
+import cstyles from '../../../Common.module.css';
+import { getFirestore, doc, updateDoc, onSnapshot, collection, setDoc, query } from "firebase/firestore";
 import Loader from '../../Loader/Loader';
 import Dropdown from '../../Dropdown/Dropdown';
 import cloneDeep from 'lodash.clonedeep';
 import Card from './Card/Card';
+import EmployeesList from './EmployeesList/EmployeesList';
+import Toggle from '../../Toggle/Toggle';
 
 function getDays(year, month) {
   const toBeReturned = [];
@@ -86,6 +89,10 @@ const registerInitial = {
     error: false,
     visible: false
   },
+  supervisor: {
+    value: '',
+    visible: false
+  },
   shift: true,
   loading: false
 };
@@ -109,17 +116,20 @@ export default function Team() {
   
   const addManagerRef = useRef(null);
   const addMemberRef = useRef(null);
+  const addSupervisorRef = useRef(null);
   
   const [createTeam, setCreateTeam] = useState(createTeamInitial);
 
   const [employees, setEmployees] = useState({
     loading: false,
-    humanresources: [],
-    projectmanagers: [],
+    values: {
+      humanresources: [],
+      projectmanagers: [],
       qualityassurance: [],
       scriptwriters: [],
       managers: [],
       teamleaders: []
+    }
     });
     
   const [teams, setTeams] = useState({
@@ -185,7 +195,7 @@ export default function Team() {
 
     setEmployees({...employees, loading: true});
 
-    const shallowEmployees = cloneDeep(employees);
+    const shallowEmployees = cloneDeep(employees.values);
 
     for (const prop in shallowEmployees) {
       onSnapshot(query(collection(getFirestore(), prop)), function(querySnapshot) {
@@ -197,7 +207,7 @@ export default function Team() {
       });
     }
 
-    setEmployees({...shallowEmployees, loading: false});
+    setEmployees({values: shallowEmployees, loading: false});
 
     onSnapshot(query(collection(getFirestore(), 'ids')), function(querySnapshot) {
       const shallowIds = cloneDeep(userIds);
@@ -211,21 +221,7 @@ export default function Team() {
   return (
 
     <>
-      <div className='d-flex justify-content-center mt-2 mb-3'>
-
-        <div className='rounded p-2 bg-white d-flex align-items-center'>
-
-          <div className={`${styles.toggle_text} ${thisPage && styles.toggle_active_text}`}>Teams</div>
-
-          <div tabIndex='0' className={`mx-2 ${styles.toggle}`} onClick={function() {setThisPage(!thisPage)}}>
-            <div className={`${styles.toggle_circle}`} style={{transform: `translateX(${thisPage ? 0 : 100}%) scale(1.1)`}}/>
-          </div>
-
-          <div className={`${styles.toggle_text} ${!thisPage && styles.toggle_active_text}`}>Employees</div>
-
-        </div>
-
-      </div>
+      <Toggle labels={["Teams", "Employees"]} value={thisPage} updateValue={function() {setThisPage(!thisPage)}}/>
 
       <div>
 
@@ -235,120 +231,31 @@ export default function Team() {
           <div className='d-flex justify-content-end p-5'>
               <div className='d-flex flex-column align-items-end w-100 me-4'>
 
-                  <div className='w-75'>
-                    <h5 className='text-center'>Project Managers</h5>
-                    <ul className='d-flex flex-wrap justify-content-between'>{(thisPage ? teams.values.projectmanagersteams.length === 0 : employees.projectmanagers.length === 0) ? <li className='w-100 text-center'>There are no {thisPage ? 'teams' : 'employees'} for this category.</li> : thisPage ? teams.values.projectmanagersteams.map((u, index) => 
-                    <Card delete={function() {
-                      deleteDoc(doc(collection(getFirestore(), 'projectmanagersteams'), u.id)).then(function() {
-                        const projectmanagersteams = cloneDeep(teams.values.projectmanagersteams);
-                        projectmanagersteams.splice(projectmanagersteams.findIndex(element => element.id === u.id), 1);
-                        setTeams({...teams, values: {...teams.values, humanresourcesteams: projectmanagersteams}});  
-                      })}}
-                     {...u}
-                     type={1}
-                      key={index}/>)
-                    : employees.projectmanagers.map((u, index) => 
-                    <Card delete={function() {
-                      deleteDoc(doc(collection(getFirestore(), 'projectmanagers'), u.id)).then(function() {
-                        const projectmanagers = cloneDeep(employees.projectmanagers);
-                        projectmanagers.splice(projectmanagers.findIndex(element => element.id === u.id), 1);
-                        setEmployees({...employees, projectmanagers: projectmanagers});  
-                      })}}
-                     {...u}
-                     type={2}
-                      key={index}/>)} 
-                    </ul>
-                  </div>
+                  {Object.keys(thisPage ? teams.values : employees.values).map(function(key) {
+                    const titles = [
+                      'Human resources',
+                      'Project managers',
+                      'Quality assurance',
+                      'Scriptwriters',
+                      'Managers',
+                      'Team leaders'
+                    ];
 
-                  <div className='w-75'>
-                    <h5 className='text-center'>Human Resources</h5>
-                    <ul className='d-flex flex-wrap justify-content-between'>
-
-                      {(thisPage ? teams.values.humanresourcesteams.length === 0 : employees.humanresources.length === 0) ? 
-                      (<li className='w-100 text-center'>There are no {thisPage ? 'teams' : 'employees'} for this category.</li>)
-                      : (thisPage ? teams.values.humanresourcesteams.map((u, index) =>
-                      <Card delete={function() {
-                        deleteDoc(doc(collection(getFirestore(), 'humanresourcesteams'), u.id)).then(function() {
-                          const humanresourcesteams = cloneDeep(teams.humanresourcesteams);
-                          humanresourcesteams.splice(humanresourcesteams.findIndex(element => element.id === u.id), 1);
-                          setTeams({...teams, humanresourcesteams: humanresourcesteams});  
-                        })}}
-                       {...u}
-                       type={1}
-                        key={index}/>)
-                      :
-                      employees.humanresources.map((u, index) => <Card delete={function() {
-                        deleteDoc(doc(collection(getFirestore(), 'humanresources'), u.id)).then(function() {
-                          const shallowHumanresources = cloneDeep(employees.humanresources);
-                          shallowHumanresources.splice(shallowHumanresources.findIndex(element => element.id === u.id), 1);
-                          setEmployees({...employees, humanresources: shallowHumanresources});  
-                        })}}
-                       {...u}
-                       type={2}
-                        key={index}/>))}
-
-                    </ul>
-                  </div>
-
-                  <div className='w-75'>
-                    <h5 className='text-center'>Scriptwriters</h5>
-                    <ul className='d-flex flex-wrap justify-content-between'>
-
-                      {(thisPage ? teams.values.scriptwritersteams.length === 0 : employees.scriptwriters.length === 0) ? 
-                      (<li className='w-100 text-center'>There are no {thisPage ? 'teams' : 'employees'} for this category.</li>)
-                      : (thisPage ? 
-                        teams.values.scriptwritersteams.map((u, index) => <Card delete={function() {
-                          deleteDoc(doc(collection(getFirestore(), 'scriptwritersteams'), u.id)).then(function() {
-                            const shallowScriptwriters = cloneDeep(teams.scriptwritersteams);
-                            shallowScriptwriters.splice(shallowScriptwriters.findIndex(element => element.id === u.id), 1);
-                            setTeams({...teams, scriptwritersteams: shallowScriptwriters});  
-                          })}}
-                         {...u}
-                         type={1}
-                          key={index}/>)
-                        :
-                        employees.scriptwriters.map((u, index) => 
-                        <Card delete={function() {
-                          deleteDoc(doc(collection(getFirestore(), 'scriptwriters'), u.id)).then(function() {
-                            const shallowScriptwriters = cloneDeep(employees.scriptwriters);
-                            shallowScriptwriters.splice(shallowScriptwriters.findIndex(element => element.id === u.id), 1);
-                            setEmployees({...employees, scriptwriters: shallowScriptwriters});  
-                          })}}
-                         {...u}
-                         type={2}
-                          key={index}/>)
-                        )
-                      }
-                    </ul>
-                  </div>
-
-                  <div className='w-75'>
-                    <h5 className='text-center'>Quality Assurance</h5>
-                    <ul className='d-flex flex-wrap justify-content-between'>
-                      {(thisPage ? teams.values.qualityassuranceteams.length === 0 : employees.qualityassurance.length === 0) ? 
-                      (<li className='w-100 text-center'>There are no {thisPage ? 'teams' : 'employees'} for this category.</li>)
-                      : (thisPage ? 
-                        teams.values.qualityassuranceteams.map((u, index) => <Card delete={function() {
-                          deleteDoc(doc(collection(getFirestore(), 'qualityassuranceteams'), u.id)).then(function() {
-                            const shallowQualityassuranceTeams = cloneDeep(teams.qualityassuranceteams);
-                            shallowQualityassuranceTeams.splice(shallowQualityassuranceTeams.findIndex(element => element.id === u.id), 1);
-                            setTeams({...teams, qualityassuranceteams: shallowQualityassuranceTeams});  
-                          })}}
-                         {...u}
-                         type={1}
-                          key={index}/>)
-                        :
-                        employees.qualityassurance.map((u, index) => <Card delete={function() {
-                          deleteDoc(doc(collection(getFirestore(), 'qualityassurance'), u.id)).then(function() {
-                            const shallowQualityassurance = cloneDeep(employees.qualityassurance);
-                            shallowQualityassurance.splice(shallowQualityassurance.findIndex(element => element.id === u.id), 1);
-                            setEmployees({...employees, qualityassurance: shallowQualityassurance});  
-                          })}}
-                         {...u}
-                         type={2}
-                          key={index}/>))}
-                      </ul>
-                  </div>
+                    return <EmployeesList update={function(id) {
+                      thisPage ? 
+                        setTeams({...teams, values: {...teams.values, [key]: teams.values[key].filter(el => el.id !== id)}})
+                      : 
+                        setEmployees({...employees, values: {...employees.values, [key]: employees.values[key].filter(el => el.id !== id)}})
+                      }}
+                      category={key}
+                      key={key}
+                      title={titles[titles.findIndex(title => key.includes(title.toLowerCase().replaceAll(' ', '')))]}
+                      thisPage={thisPage}
+                      array={thisPage ? teams.values[key] : employees.values[key]}
+                      employees={employees.values[titles[titles.findIndex(title => key.includes(title.toLowerCase().replaceAll(' ', '')))].toLowerCase().replaceAll(' ', '')]}
+                      />
+                    })
+                  }
                 
               </div>
 
@@ -382,12 +289,17 @@ export default function Team() {
                       created: `${new Date().toLocaleString('default', {month: 'long'})}/${new Date().getDate()}/${new Date().getFullYear()}`,
                       id: generatedId.toString(),
                       shift: `${shallowCreateTeam.shift ? 'Morning' : 'Night'} Shift`,
-                      members: [],
+                      members: createTeam.addEmployee.employees.map(emp => emp.id),
                       speciality: shallowCreateTeam.speciality.value,
                       manager: shallowCreateTeam.addManager.id
                     }).then(setDoc(doc(collection(getFirestore(), `ids`), generatedId.toString()), {value: generatedId.toString()})).then(function() {
-                      setCreateTeam(createTeamInitial);
-                    });
+                      for (const member of createTeam.addEmployee.employees) {
+                        updateDoc(doc(collection(getFirestore(), shallowCreateTeam.speciality.value.toLowerCase()), member.id), {
+                          team: shallowCreateTeam.name.value,
+                          manager: createTeam.addManager.value
+                        })
+                      }
+                    }).then(() => setCreateTeam(createTeamInitial));
                   }
 
                 }}>
@@ -408,17 +320,17 @@ export default function Team() {
                       <input
                       onBlur={function(e) {if (!addManagerRef.current.contains(e.relatedTarget)) {setCreateTeam({...createTeam, addManager: {...createTeam.addManager, visible: false}})}}}
                       onFocus={function() {setCreateTeam({...createTeam, addManager: {...createTeam.addManager, visible: true}})}}
-                      disabled={employees.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).length === 0} maxLength='15'
-                      className={`p-2 w-100 mt-3 me-3 rounded ${sstyles.inputs} ${employees.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).length === 0 && styles.disabled_input} ${createTeam.addManager.visible && styles.searchbox_active}`}
+                      disabled={employees.values.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).length === 0} maxLength='15'
+                      className={`p-2 w-100 mt-3 me-3 rounded ${sstyles.inputs} ${employees.values.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).length === 0 && cstyles.disabled_input} ${createTeam.addManager.visible && styles.searchbox_active}`}
                       type='text'
-                      placeholder={employees.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).length === 0 ? 'No managers available' : 'Add a manager to the team'}
+                      placeholder={employees.values.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).length === 0 ? 'No managers available' : 'Add a manager to the team'}
                       value={createTeam.addManager.value}
                       onChange={function(e) {setCreateTeam({...createTeam, addManager: {...createTeam.addManager, value: e.target.value}})}}/>
                       {(createTeam.addManager.visible && <ul ref={addManagerRef} className={`position-absolute bg-white shadow rounded-bottom p-2 m-0 ${styles.search_dropdown}`}>
 
-                      {employees.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).some(em => em.displayName.toLowerCase().includes(createTeam.addManager.value.toLowerCase())) ? (
+                      {employees.values.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).some(em => em.displayName.toLowerCase().includes(createTeam.addManager.value.toLowerCase())) ? (
                         
-                        employees.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).map(function(emp, index) {
+                        employees.values.teamleaders.filter(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && em.type === (createTeam.speciality.value === 'Quality Assurance' ? createTeam.speciality.value : createTeam.speciality.value.substring(0, createTeam.speciality.value.length - 1))).map(function(emp, index) {
 
                           return emp.displayName.toLowerCase().includes(createTeam.addManager.value.toLowerCase()) && <li onBlur={function(e) {if (!addManagerRef.current.contains(e.relatedTarget)) {setCreateTeam({...createTeam, addManager: {...createTeam.addManager, visible: false, id: emp.id}})}}} tabIndex='0' onClick={function() {setCreateTeam({...createTeam, addManager: {...createTeam.addManager, value: emp.displayName}})}} key={index}>{emp.displayName}</li>
 
@@ -434,7 +346,7 @@ export default function Team() {
                     <div className='position-relative'>
                       {createTeam.addEmployee.employees.length > 0 && (
                         <ul className='p-0 mb-0 mt-3 d-flex'>
-                          {createTeam.addEmployee.employees.map((e, index) => <li><Card delete={function() {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, employees: [...createTeam.addEmployee.employees.filter(em => em.id !== e.id)]}})}} type={3} key={index} displayName={e.name}/></li>)}
+                          {createTeam.addEmployee.employees.map((e, index) => <li><Card delete={function() {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, employees: [...createTeam.addEmployee.employees.filter(em => em.id !== e.id)]}})}} type={3} key={e.id} displayName={e.name}/></li>)}
                         </ul>
                       )}
                       
@@ -450,18 +362,18 @@ export default function Team() {
                           });
                         }}}
                       onFocus={function() {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, visible: true}})}}
-                      disabled={employees[createTeam.speciality.value.toLowerCase().replace(' ', '')].filter(e => e.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && !createTeam.addEmployee.employees.some(employee => employee.id === e.id)).length === 0}
+                      disabled={employees.values[createTeam.speciality.value.toLowerCase().replace(' ', '')].filter(e => e.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && !createTeam.addEmployee.employees.some(employee => employee.id === e.id)).length === 0}
                       maxLength='15'
-                      className={`p-2 w-100 mt-3 me-3 rounded ${sstyles.inputs} ${employees[createTeam.speciality.value.toLowerCase().replace(' ', '')].filter(e => e.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && !createTeam.addEmployee.employees.some(employee => employee.id === e.id)).length === 0 && styles.disabled_input} ${createTeam.addEmployee.visible && styles.searchbox_active}`} type='text'
-                      placeholder={employees[createTeam.speciality.value.toLowerCase().replace(' ', '')].filter(e => e.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && !createTeam.addEmployee.employees.some(employee => employee.id === e.id)).length === 0 ? 'No employees available' : 'Add a member to the team'}
+                      className={`p-2 w-100 mt-3 me-3 rounded ${sstyles.inputs} ${employees.values[createTeam.speciality.value.toLowerCase().replace(' ', '')].filter(e => e.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && !createTeam.addEmployee.employees.some(employee => employee.id === e.id)).length === 0 && cstyles.disabled_input} ${createTeam.addEmployee.visible && styles.searchbox_active}`} type='text'
+                      placeholder={employees.values[createTeam.speciality.value.toLowerCase().replace(' ', '')].filter(e => e.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && !createTeam.addEmployee.employees.some(employee => employee.id === e.id)).length === 0 ? 'No employees available' : 'Add a member to the team'}
                       value={createTeam.addEmployee.value}
                       onChange={function(e) {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, value: e.target.value}})}}/>
                       
                       {(createTeam.addEmployee.visible && <ul ref={addMemberRef} className={`position-absolute bg-white shadow rounded-bottom p-2 m-0 ${styles.search_dropdown}`}>
 
-                      {employees[createTeam.speciality.value.toLowerCase().replace(' ', '')].some(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && !createTeam.addEmployee.employees.some(employee => employee.id === em.id) && em.displayName.toLowerCase().includes(createTeam.addEmployee.value.toLowerCase())) ? (
+                      {employees.values[createTeam.speciality.value.toLowerCase().replace(' ', '')].some(em => em.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift') && !createTeam.addEmployee.employees.some(employee => employee.id === em.id) && em.displayName.toLowerCase().includes(createTeam.addEmployee.value.toLowerCase())) ? (
                         
-                        employees[createTeam.speciality.value.toLowerCase().replace(' ', '')].filter(e => e.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift')).map(function(emp, index) {
+                        employees.values[createTeam.speciality.value.toLowerCase().replace(' ', '')].filter(e => e.shift === (createTeam.shift ? 'Morning Shift' : 'Night Shift')).map(function(emp, index) {
 
                           return emp.displayName.toLowerCase().includes(createTeam.addEmployee.value.toLowerCase()) && <li onBlur={function(e) {if (!addMemberRef.current.contains(e.relatedTarget)) {setCreateTeam({...createTeam, addEmployee: {value: '', id: '', visible: false, employees: (createTeam.addEmployee.value.length && createTeam.addEmployee.id.length) ? [...createTeam.addEmployee.employees, {name: createTeam.addEmployee.value, id: createTeam.addEmployee.id}] : [...createTeam.addEmployee.employees]}})}}} tabIndex='0' onClick={function() {setCreateTeam({...createTeam, addEmployee: {...createTeam.addEmployee, value: emp.displayName, id: emp.id}})}} key={index}>{emp.displayName}</li>
 
@@ -473,18 +385,7 @@ export default function Team() {
 
                     </div>}
 
-                    <div className='mt-3'>
-                      <div className={`text-center ${styles.toggle_text}`}>Shift</div>
-
-                      <div className='d-flex justify-content-between align-items-center mt-2 mb-3'>
-                        <div className={`${styles.toggle_text} ${createTeam.shift && styles.toggle_active_text}`}>Morning</div>
-                        <div tabIndex='0' className={`mx-2 ${styles.toggle}`} onClick={function() {setCreateTeam({...createTeam, addManager: {...createTeamInitial.addManager}, addEmployee: {...createTeamInitial.addEmployee}, shift: !createTeam.shift})}}>
-                          <div className={`${styles.toggle_circle}`} style={{transform: `translateX(${createTeam.shift ? 0 : 100}%) scale(1.1)`}}/>
-                        </div>
-                        <div className={`${styles.toggle_text} ${!createTeam.shift && styles.toggle_active_text}`}>Night</div>
-                      </div>
-
-                    </div>
+                    <Toggle labels={["Morning", "Night"]} value={createTeam.shift} updateValue={function() {setCreateTeam({...createTeam, addManager: {...createTeamInitial.addManager}, addEmployee: {...createTeamInitial.addEmployee}, shift: !createTeam.shift})}}/>
 
                     <button className={`p-2 w-100 rounded mt-3 mt-auto ${sstyles.inputs}`}>Submit</button>
                   </div>
@@ -553,11 +454,19 @@ export default function Team() {
                   <h4 className='text-center mb-3'>Register an employee</h4>
 
                   <div className='d-flex'>
-                    <input maxLength='15' className={`p-2 w-100 me-3 rounded ${sstyles.inputs} ${register.name.first.error.visible && sstyles.inputs_errors}`} type='text' placeholder='First name' value={register.name.first.value} onChange={function(e) {(e.nativeEvent.inputType === 'deleteContentBackward' || /^[a-zA-Z]+$/.test(e.target.value)) && setRegister({...register, name: {...register.name, first: {value: e.target.value, error: {visible: false, value: ''}}}})}}/>
-                    <input maxLength='15' className={`p-2 w-100 rounded ${sstyles.inputs} ${register.name.first.error.visible && sstyles.inputs_errors}`} type='text' placeholder='Last name' value={register.name.last.value} onChange={function(e) {(e.nativeEvent.inputType === 'deleteContentBackward' ||/^[a-zA-Z]+$/.test(e.target.value)) && setRegister({...register, name: {...register.name, last: {value: e.target.value, error: {visible: false, value: ''}}}})}}/>
+                    <div className='me-3 w-100'>
+                      <input maxLength='15' className={`p-2 w-100 rounded ${sstyles.inputs} ${register.name.first.error.visible && sstyles.inputs_errors}`} type='text' placeholder='First name' value={register.name.first.value} onChange={function(e) {(e.nativeEvent.inputType === 'deleteContentBackward' || /^[a-zA-Z]+$/.test(e.target.value)) && setRegister({...register, name: {...register.name, first: {value: e.target.value.length > 0 ? e.target.value[0].toUpperCase() + e.target.value.substring(1).toLowerCase() : e.target.value, error: {visible: false, value: ''}}}})}}/>
+                      <div className={`mt-1 ${sstyles.errors} ${register.name.first.error.value.length ? 'visible' : 'invisible'}`} style={{fontSize: `${register.name.first.error.value.length ? 85 : 0}%`}}>{register.name.first.error.value}</div>
+                    </div>
+
+                    <div className='w-100'>
+                      <input maxLength='15' className={`p-2 w-100 rounded ${sstyles.inputs} ${register.name.last.error.visible && sstyles.inputs_errors}`} type='text' placeholder='Last name' value={register.name.last.value} onChange={function(e) {(e.nativeEvent.inputType === 'deleteContentBackward' ||/^[a-zA-Z]+$/.test(e.target.value)) && setRegister({...register, name: {...register.name, last: {value: e.target.value.length > 0 ? e.target.value[0].toUpperCase() + e.target.value.substring(1).toLowerCase() : e.target.value, error: {visible: false, value: ''}}}})}}/>
+                      <div className={`mt-1 ${sstyles.errors} ${register.name.last.error.value.length ? 'visible' : 'invisible'}`} style={{fontSize: `${register.name.last.error.value.length ? 85 : 0}%`}}>{register.name.last.error.value}</div>
+                    </div>
+
                   </div>
 
-                  <div className={`p-2 rounded mt-3 ${[sstyles.inputs, styles.disabled_input].join(' ')}`}>
+                  <div className={`p-2 rounded mt-3 ${[sstyles.inputs, cstyles.disabled_input].join(' ')}`}>
                     {(register.name.first.value.length && register.name.last.value.length) ? `${register.name.first.value}.${register.name.last.value}@yahoo.com` : 'Email'}
                   </div>
 
@@ -579,18 +488,7 @@ export default function Team() {
 
                   {register.title.value === 'Team Leader' && <Dropdown error={register.type.error} visible={register.type.visible} setVisibility={function() {setRegister({...register, type: {...register.type, visible: !register.type.visible, error: false}})}} items={['Scriptwriter', 'Quality Assurance', 'Project Manager', 'Manager', 'Human Resources']} value={register.type.value} setValue={function(val) {setRegister({...register, type: {...register.type, value: val, error: false}, });}}/>}
 
-                  <div className='mt-3'>
-                    <div className={`text-center ${styles.toggle_text}`}>Shift</div>
-
-                    <div className='d-flex justify-content-between align-items-center mt-2 mb-3'>
-                      <div className={`${styles.toggle_text} ${register.shift && styles.toggle_active_text}`}>Morning</div>
-                      <div tabIndex='0' className={`mx-2 ${styles.toggle}`} onClick={function() {setRegister({...register, shift: !register.shift})}}>
-                        <div className={`${styles.toggle_circle}`} style={{transform: `translateX(${register.shift ? 0 : 100}%) scale(1.1)`}}/>
-                      </div>
-                      <div className={`${styles.toggle_text} ${!register.shift && styles.toggle_active_text}`}>Night</div>
-                    </div>
-
-                  </div>
+                  <Toggle labels={["Morning", "Night"]} value={register.shift} updateValue={function() {setRegister({...register, shift: !register.shift})}}/>
 
                   <button className={`p-2 w-100 rounded mt-3 ${sstyles.inputs}`}>Submit</button>
 

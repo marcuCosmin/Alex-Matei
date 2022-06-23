@@ -1,6 +1,13 @@
+html {
+    min-width: 100%;
+    min-height: 100%;
+}
+
 body {
     background: radial-gradient(transparent, #cecece);
     background-repeat: no-repeat;
+    min-width: 100%;
+    min-height: 100%;
 }
 
 ::placeholder {
@@ -15,10 +22,24 @@ input {
 
 ul {
     list-style: none !important;
+    margin-bottom: 0;
+    padding: 0.5rem;
 }
 
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+a {
+    color: white !important;
+    text-decoration: none !important;
+}
+
+textarea {
+    resize: none !important;
+    display: block;
+    overflow: hidden;
+    outline: none !important;
 }
